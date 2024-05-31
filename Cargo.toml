@@ -1,0 +1,25 @@
+[package]
+name = "mdconfig"
+version = "0.1.0"
+edition = "2021"
+authors = ["Alan Somers <asomers@gmail.com>"]
+license = "MIT/Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/asomers/mdconfig-rs"
+description = """
+Rust bindings for FreeBSD's md devices
+"""
+categories = ["api-bindings", "os::freebsd-apis"]
+keywords = ["freebsd", "memory-disk", "md"]
+documentation = "https://docs.rs/mdconfig"
+include = ["src/**/*", "LICENSE-*", "README.md", "CHANGELOG.md"]
+
+[package.metadata.docs.rs]
+targets = [ "x86_64-unknown-freebsd" ]
+
+[dependencies]
+libc = { version = "0.2.154", features = ["extra_traits"] }
+nix = { version = ">=0.24.0,<0.30.0", default-features = false, features = [ "ioctl" ] }
+
+[dev-dependencies]
+tempfile = "3.4"
