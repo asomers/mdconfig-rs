@@ -7,8 +7,9 @@ for temporary storage, and they're very useful for working with disk images as
 files.  This crate provides bindings to `md` that are equivalent to what the
 [mdconfig(8)] utility provides, but Rustier.
 
-![Build Status](https://api.cirrus-ci.com/github/asomers/mdconfig.svg)](https://cirrus-ci.com/github/asomers/mdconfig)
+![Build Status](https://api.cirrus-ci.com/github/asomers/mdconfig.svg)
 [![Crates.io](https://img.shields.io/crates/v/mdconfig.svg)](https://crates.io/crates/mdconfig)
+
 [Documentation](https://docs.rs/crate/mdconfig)
 
 [md(4)]: https://man.freebsd.org/cgi/man.cgi?query=md
