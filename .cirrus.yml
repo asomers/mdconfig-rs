@@ -1,7 +1,6 @@
 setup: &SETUP
   env:
     HOME: /tmp # cargo needs it
-    VERSION: 1.70.0
   setup_script:
     - fetch https://sh.rustup.rs -o rustup.sh
     - sh rustup.sh -y --profile=minimal
@@ -11,7 +10,7 @@ task:
   env:
     HOME: /tmp  # cargo cache needs it
     TARGET: x86_64-unknown-freebsd
-    VERSION: nightly
+    VERSION: 1.70.0
   matrix:
     - name: FreeBSD 15 amd64 nightly
       env:
