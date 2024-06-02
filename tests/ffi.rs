@@ -5,7 +5,6 @@ use libc::off_t;
 
 pub type __int64_t = ::std::os::raw::c_long;
 
-
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct diocgattr_arg {

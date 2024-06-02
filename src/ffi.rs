@@ -18,10 +18,6 @@ pub const MD_VERIFY: u32 = 128;
 pub const MD_CACHE: u32 = 256;
 pub const MD_MUSTDEALLOC: u32 = 512;
 
-
-
-
-
 pub const md_types_MD_MALLOC: md_types = 0;
 pub const md_types_MD_PRELOAD: md_types = 1;
 pub const md_types_MD_VNODE: md_types = 2;
