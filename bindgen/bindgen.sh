@@ -34,10 +34,10 @@ bindgen --allowlist-type 'md_ioctl' \
 	${CRATEDIR}/bindgen/wrapper.h >> ${CRATEDIR}/src/${FFI_RS}
 rustfmt ${CRATEDIR}/src/${FFI_RS}
 
-cat > tests/${FFI_RS} << HERE
+cat > tests/functional/${FFI_RS} << HERE
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 HERE
 bindgen --allowlist-type diocgattr_arg \
-	/usr/include/sys/disk.h >> ${CRATEDIR}/tests/${FFI_RS}
-rustfmt ${CRATEDIR}/tests/${FFI_RS}
+	/usr/include/sys/disk.h >> ${CRATEDIR}/tests/functional/${FFI_RS}
+rustfmt ${CRATEDIR}/tests/functional/${FFI_RS}
