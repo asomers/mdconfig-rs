@@ -11,10 +11,11 @@ use std::{
     sync::OnceLock,
 };
 
+use cfg_if::cfg_if;
 use mdconfig::*;
 use nix::{ioctl_read, ioctl_readwrite};
 
-cfg_if::cfg_if! {
+cfg_if! {
     if #[cfg(target_pointer_width = "64")] {
         mod ffi64;
         use ffi64 as ffi;
@@ -284,8 +285,17 @@ mod create {
             arg.len = mem::size_of::<libc::c_int>() as i32;
             let attrp = attrname.as_bytes().as_ptr() as *const i8;
             arg.name.as_mut_ptr().copy_from(attrp, attrname.len());
-            //arg.name[0..13].copy_from_slice(attrname.as_bytes() as &[i8]);
-            diocgattr(f.as_raw_fd(), &mut arg).unwrap();
+            let r = diocgattr(f.as_raw_fd(), &mut arg);
+            cfg_if! {
+                if #[cfg(target_pointer_width = "32")] {
+                    if r == Err(nix::errno::Errno::ENOTTY) {
+                        // This error usually means that we're running in 32-bit emulation mode.
+                        // DIOCGATTR does not work in 32-bit emulation, so skip this test.
+                        return
+                    }
+                }
+            }
+            r.unwrap();
             arg.value.i
         };
         assert!(verified != 0);
