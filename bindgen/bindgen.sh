@@ -2,12 +2,19 @@
 
 CRATEDIR=`dirname $0`/..
 
-cat > src/ffi.rs << HERE
+case `uname -m` in
+i386)
+	FFI_RS=ffi32.rs
+	;;
+amd64)
+	FFI_RS=ffi64.rs
+	;;
+esac
+
+cat > src/${FFI_RS} << HERE
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
 #![allow(unused)]
-use libc::off_t;
-type u_int64_t = i64;
 HERE
 
 bindgen --allowlist-type 'md_ioctl' \
@@ -24,14 +31,13 @@ bindgen --allowlist-type 'md_ioctl' \
 	--allowlist-item 'MD_READONLY' \
 	--allowlist-item 'MD_RESERVE' \
 	--allowlist-item 'MD_VERIFY' \
-	${CRATEDIR}/bindgen/wrapper.h | \
-	sed -E 's/pub type.*(int64_t|off_t).*//' >> ${CRATEDIR}/src/ffi.rs
+	${CRATEDIR}/bindgen/wrapper.h >> ${CRATEDIR}/src/${FFI_RS}
+rustfmt ${CRATEDIR}/src/${FFI_RS}
 
-cat > tests/ffi.rs << HERE
+cat > tests/${FFI_RS} << HERE
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
-use libc::off_t;
 HERE
 bindgen --allowlist-type diocgattr_arg \
-	/usr/include/sys/disk.h | \
-	sed 's/pub type.*off_t.*//' >> ${CRATEDIR}/tests/ffi.rs
+	/usr/include/sys/disk.h >> ${CRATEDIR}/tests/${FFI_RS}
+rustfmt ${CRATEDIR}/tests/${FFI_RS}

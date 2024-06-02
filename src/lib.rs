@@ -24,7 +24,15 @@ use std::{
 
 use nix::ioctl_readwrite;
 
-mod ffi;
+cfg_if::cfg_if! {
+    if #[cfg(target_pointer_width = "64")] {
+        mod ffi64;
+        use ffi64 as ffi;
+    } else if #[cfg(target_pointer_width = "32")] {
+        mod ffi32;
+        use ffi32 as ffi;
+    }
+}
 
 // Nix's ioctl macros create `pub` functions.  Put them into a module to hide them from the public.
 mod ioctl {

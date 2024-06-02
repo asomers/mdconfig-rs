@@ -14,7 +14,15 @@ use std::{
 use mdconfig::*;
 use nix::{ioctl_read, ioctl_readwrite};
 
-mod ffi;
+cfg_if::cfg_if! {
+    if #[cfg(target_pointer_width = "64")] {
+        mod ffi64;
+        use ffi64 as ffi;
+    } else if #[cfg(target_pointer_width = "32")] {
+        mod ffi32;
+        use ffi32 as ffi;
+    }
+}
 
 static FBSD15: OnceLock<bool> = OnceLock::new();
 
