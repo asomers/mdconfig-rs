@@ -8,6 +8,7 @@ use std::{
     },
     path::Path,
     process::Command,
+    sync::OnceLock
 };
 
 use mdconfig::*;
@@ -15,10 +16,40 @@ use nix::{ioctl_read, ioctl_readwrite};
 
 mod ffi;
 
+static FBSD15: OnceLock<bool> = OnceLock::new();
+
+#[macro_export]
+macro_rules! require_fbsd15 {
+    () => {
+        let fbsd15 = FBSD15.get_or_init(|| {
+            let major = nix::sys::utsname::uname().unwrap().release()
+                .to_str()
+                .unwrap()
+                .split('.')
+                .next()
+                .unwrap()
+                .parse::<i32>() 
+                .unwrap();
+            major >= 15
+        });
+        if !fbsd15 {
+            use ::std::io::Write;
+
+            let stderr = ::std::io::stderr();
+            let mut handle = stderr.lock();
+            writeln!(handle, "This test requires FreeBSD 15 or later.  Skipping test.")
+
+                .unwrap();
+            return;
+        }
+    }
+}
+
 ioctl_read!(diocgsectorsize, 'd', 128, nix::libc::c_uint);
 ioctl_read!(diocfwsectors, 'd', 130, nix::libc::c_uint);
 ioctl_read!(diocfwheads, 'd', 131, nix::libc::c_uint);
 ioctl_readwrite!(diocgattr, 'd', 142, ffi::diocgattr_arg);
+
 
 #[derive(Clone, Debug)]
 struct MdData {
@@ -45,7 +76,7 @@ fn list_unit(unit: u32) -> MdData {
         type_:   fields.next().unwrap().to_string(),
         size:    fields.next().unwrap().to_string(),
         path:    fields.next().unwrap().to_string(),
-        label:   fields.next().unwrap().to_string(),
+        label:   fields.next().unwrap_or("-").to_string(),
         options: fields.next().unwrap_or("").to_string(),
     }
 }
@@ -55,6 +86,8 @@ mod create {
 
     #[test]
     fn async_() {
+        require_fbsd15!();
+
         let tf = tempfile::NamedTempFile::new().unwrap();
         tf.as_file().set_len(1 << 21).unwrap();
         let md = Builder::vnode(tf.path())
@@ -68,6 +101,8 @@ mod create {
 
     #[test]
     fn cache() {
+        require_fbsd15!();
+
         let tf = tempfile::NamedTempFile::new().unwrap();
         tf.as_file().set_len(1 << 21).unwrap();
         let md = Builder::vnode(tf.path())
@@ -81,6 +116,8 @@ mod create {
 
     #[test]
     fn compress() {
+        require_fbsd15!();
+
         let md = Builder::malloc(1 << 20).compress(true).create().unwrap();
 
         let data = list_unit(md.unit());
@@ -118,6 +155,8 @@ mod create {
 
     #[test]
     fn mustdealloc() {
+        require_fbsd15!();
+
         let tf = tempfile::NamedTempFile::new().unwrap();
         tf.as_file().set_len(1 << 21).unwrap();
         let md = Builder::vnode(tf.path())
@@ -149,6 +188,8 @@ mod create {
 
     #[test]
     fn readonly() {
+        require_fbsd15!();
+
         let tf = tempfile::NamedTempFile::new().unwrap();
         tf.as_file().set_len(1 << 21).unwrap();
         let md = Builder::vnode(tf.path())
@@ -162,6 +203,8 @@ mod create {
 
     #[test]
     fn reserve() {
+        require_fbsd15!();
+
         let md = Builder::swap(1 << 20).reserve(true).create().unwrap();
 
         let data = list_unit(md.unit());

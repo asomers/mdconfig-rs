@@ -23,4 +23,5 @@ libc = { version = "0.2.154", features = ["extra_traits"] }
 nix = { version = ">=0.24.0,<0.30.0", default-features = false, features = [ "ioctl" ] }
 
 [dev-dependencies]
+nix = { version = ">=0.24.0,<0.30.0", default-features = false, features = [ "feature", "ioctl" ] }
 tempfile = "3.4"
