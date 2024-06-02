@@ -8,7 +8,7 @@ use std::{
     },
     path::Path,
     process::Command,
-    sync::OnceLock
+    sync::OnceLock,
 };
 
 use mdconfig::*;
@@ -22,13 +22,15 @@ static FBSD15: OnceLock<bool> = OnceLock::new();
 macro_rules! require_fbsd15 {
     () => {
         let fbsd15 = FBSD15.get_or_init(|| {
-            let major = nix::sys::utsname::uname().unwrap().release()
+            let major = nix::sys::utsname::uname()
+                .unwrap()
+                .release()
                 .to_str()
                 .unwrap()
                 .split('.')
                 .next()
                 .unwrap()
-                .parse::<i32>() 
+                .parse::<i32>()
                 .unwrap();
             major >= 15
         });
@@ -37,19 +39,20 @@ macro_rules! require_fbsd15 {
 
             let stderr = ::std::io::stderr();
             let mut handle = stderr.lock();
-            writeln!(handle, "This test requires FreeBSD 15 or later.  Skipping test.")
-
-                .unwrap();
+            writeln!(
+                handle,
+                "This test requires FreeBSD 15 or later.  Skipping test."
+            )
+            .unwrap();
             return;
         }
-    }
+    };
 }
 
 ioctl_read!(diocgsectorsize, 'd', 128, nix::libc::c_uint);
 ioctl_read!(diocfwsectors, 'd', 130, nix::libc::c_uint);
 ioctl_read!(diocfwheads, 'd', 131, nix::libc::c_uint);
 ioctl_readwrite!(diocgattr, 'd', 142, ffi::diocgattr_arg);
-
 
 #[derive(Clone, Debug)]
 struct MdData {
@@ -90,10 +93,7 @@ mod create {
 
         let tf = tempfile::NamedTempFile::new().unwrap();
         tf.as_file().set_len(1 << 21).unwrap();
-        let md = Builder::vnode(tf.path())
-            .async_(true)
-            .create()
-            .unwrap();
+        let md = Builder::vnode(tf.path()).async_(true).create().unwrap();
 
         let data = list_unit(md.unit());
         assert_eq!(data.options, "async");
@@ -105,10 +105,7 @@ mod create {
 
         let tf = tempfile::NamedTempFile::new().unwrap();
         tf.as_file().set_len(1 << 21).unwrap();
-        let md = Builder::vnode(tf.path())
-            .cache(true)
-            .create()
-            .unwrap();
+        let md = Builder::vnode(tf.path()).cache(true).create().unwrap();
 
         let data = list_unit(md.unit());
         assert_eq!(data.options, "cache");
@@ -192,10 +189,7 @@ mod create {
 
         let tf = tempfile::NamedTempFile::new().unwrap();
         tf.as_file().set_len(1 << 21).unwrap();
-        let md = Builder::vnode(tf.path())
-            .readonly(true)
-            .create()
-            .unwrap();
+        let md = Builder::vnode(tf.path()).readonly(true).create().unwrap();
 
         let data = list_unit(md.unit());
         assert_eq!(data.options, "readonly");
@@ -273,10 +267,7 @@ mod create {
     fn verify() {
         let tf = tempfile::NamedTempFile::new().unwrap();
         tf.as_file().set_len(1 << 21).unwrap();
-        let md = Builder::vnode(tf.path())
-            .verify(true)
-            .create()
-            .unwrap();
+        let md = Builder::vnode(tf.path()).verify(true).create().unwrap();
 
         let f = fs::File::open(md.path()).unwrap();
         let attrname = OsStr::new("MNT::verified");
@@ -315,10 +306,7 @@ mod create {
     fn vnode_with_size() {
         let tf = tempfile::NamedTempFile::new().unwrap();
         tf.as_file().set_len(1 << 21).unwrap();
-        let md = Builder::vnode(tf.path())
-            .size(1 << 20)
-            .create()
-            .unwrap();
+        let md = Builder::vnode(tf.path()).size(1 << 20).create().unwrap();
 
         let data = list_unit(md.unit());
         assert_eq!(data.size, "1024K");
