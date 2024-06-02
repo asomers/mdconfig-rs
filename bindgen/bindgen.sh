@@ -2,7 +2,16 @@
 
 CRATEDIR=`dirname $0`/..
 
-cat > src/ffi.rs << HERE
+case `uname -m` in
+i386)
+	FFI_RS=ffi32.rs
+	;;
+amd64)
+	FFI_RS=ffi64.rs
+	;;
+esac
+
+cat > src/${FFI_RS} << HERE
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
 #![allow(unused)]
@@ -22,10 +31,13 @@ bindgen --allowlist-type 'md_ioctl' \
 	--allowlist-item 'MD_READONLY' \
 	--allowlist-item 'MD_RESERVE' \
 	--allowlist-item 'MD_VERIFY' \
-	${CRATEDIR}/bindgen/wrapper.h >> ${CRATEDIR}/src/ffi.rs
+	${CRATEDIR}/bindgen/wrapper.h >> ${CRATEDIR}/src/${FFI_RS}
+rustfmt ${CRATEDIR}/src/${FFI_RS}
 
-cat > tests/ffi.rs << HERE
+cat > tests/functional/${FFI_RS} << HERE
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 HERE
-bindgen --allowlist-type diocgattr_arg /usr/include/sys/disk.h >> ${CRATEDIR}/tests/ffi.rs
+bindgen --allowlist-type diocgattr_arg \
+	/usr/include/sys/disk.h >> ${CRATEDIR}/tests/functional/${FFI_RS}
+rustfmt ${CRATEDIR}/tests/functional/${FFI_RS}

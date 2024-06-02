@@ -8,12 +8,55 @@ use std::{
     },
     path::Path,
     process::Command,
+    sync::OnceLock,
 };
 
+use cfg_if::cfg_if;
 use mdconfig::*;
 use nix::{ioctl_read, ioctl_readwrite};
 
-mod ffi;
+cfg_if! {
+    if #[cfg(target_pointer_width = "64")] {
+        mod ffi64;
+        use ffi64 as ffi;
+    } else if #[cfg(target_pointer_width = "32")] {
+        mod ffi32;
+        use ffi32 as ffi;
+    }
+}
+
+static FBSD15: OnceLock<bool> = OnceLock::new();
+
+#[macro_export]
+macro_rules! require_fbsd15 {
+    () => {
+        let fbsd15 = FBSD15.get_or_init(|| {
+            let major = nix::sys::utsname::uname()
+                .unwrap()
+                .release()
+                .to_str()
+                .unwrap()
+                .split('.')
+                .next()
+                .unwrap()
+                .parse::<i32>()
+                .unwrap();
+            major >= 15
+        });
+        if !fbsd15 {
+            use ::std::io::Write;
+
+            let stderr = ::std::io::stderr();
+            let mut handle = stderr.lock();
+            writeln!(
+                handle,
+                "This test requires FreeBSD 15 or later.  Skipping test."
+            )
+            .unwrap();
+            return;
+        }
+    };
+}
 
 ioctl_read!(diocgsectorsize, 'd', 128, nix::libc::c_uint);
 ioctl_read!(diocfwsectors, 'd', 130, nix::libc::c_uint);
@@ -45,7 +88,7 @@ fn list_unit(unit: u32) -> MdData {
         type_:   fields.next().unwrap().to_string(),
         size:    fields.next().unwrap().to_string(),
         path:    fields.next().unwrap().to_string(),
-        label:   fields.next().unwrap().to_string(),
+        label:   fields.next().unwrap_or("-").to_string(),
         options: fields.next().unwrap_or("").to_string(),
     }
 }
@@ -54,33 +97,36 @@ mod create {
     use super::*;
 
     #[test]
+    #[ignore = "https://github.com/asomers/mdconfig/issues/1"]
     fn async_() {
+        require_fbsd15!();
+
         let tf = tempfile::NamedTempFile::new().unwrap();
         tf.as_file().set_len(1 << 21).unwrap();
-        let md = Builder::vnode(tf.path())
-            .async_(true)
-            .create()
-            .unwrap();
+        let md = Builder::vnode(tf.path()).async_(true).create().unwrap();
 
         let data = list_unit(md.unit());
         assert_eq!(data.options, "async");
     }
 
     #[test]
+    #[ignore = "https://github.com/asomers/mdconfig/issues/1"]
     fn cache() {
+        require_fbsd15!();
+
         let tf = tempfile::NamedTempFile::new().unwrap();
         tf.as_file().set_len(1 << 21).unwrap();
-        let md = Builder::vnode(tf.path())
-            .cache(true)
-            .create()
-            .unwrap();
+        let md = Builder::vnode(tf.path()).cache(true).create().unwrap();
 
         let data = list_unit(md.unit());
         assert_eq!(data.options, "cache");
     }
 
     #[test]
+    #[ignore = "https://github.com/asomers/mdconfig/issues/1"]
     fn compress() {
+        require_fbsd15!();
+
         let md = Builder::malloc(1 << 20).compress(true).create().unwrap();
 
         let data = list_unit(md.unit());
@@ -117,7 +163,10 @@ mod create {
     }
 
     #[test]
+    #[ignore = "https://github.com/asomers/mdconfig/issues/1"]
     fn mustdealloc() {
+        require_fbsd15!();
+
         let tf = tempfile::NamedTempFile::new().unwrap();
         tf.as_file().set_len(1 << 21).unwrap();
         let md = Builder::vnode(tf.path())
@@ -148,20 +197,23 @@ mod create {
     }
 
     #[test]
+    #[ignore = "https://github.com/asomers/mdconfig/issues/1"]
     fn readonly() {
+        require_fbsd15!();
+
         let tf = tempfile::NamedTempFile::new().unwrap();
         tf.as_file().set_len(1 << 21).unwrap();
-        let md = Builder::vnode(tf.path())
-            .readonly(true)
-            .create()
-            .unwrap();
+        let md = Builder::vnode(tf.path()).readonly(true).create().unwrap();
 
         let data = list_unit(md.unit());
         assert_eq!(data.options, "readonly");
     }
 
     #[test]
+    #[ignore = "https://github.com/asomers/mdconfig/issues/1"]
     fn reserve() {
+        require_fbsd15!();
+
         let md = Builder::swap(1 << 20).reserve(true).create().unwrap();
 
         let data = list_unit(md.unit());
@@ -230,10 +282,7 @@ mod create {
     fn verify() {
         let tf = tempfile::NamedTempFile::new().unwrap();
         tf.as_file().set_len(1 << 21).unwrap();
-        let md = Builder::vnode(tf.path())
-            .verify(true)
-            .create()
-            .unwrap();
+        let md = Builder::vnode(tf.path()).verify(true).create().unwrap();
 
         let f = fs::File::open(md.path()).unwrap();
         let attrname = OsStr::new("MNT::verified");
@@ -242,8 +291,17 @@ mod create {
             arg.len = mem::size_of::<libc::c_int>() as i32;
             let attrp = attrname.as_bytes().as_ptr() as *const i8;
             arg.name.as_mut_ptr().copy_from(attrp, attrname.len());
-            //arg.name[0..13].copy_from_slice(attrname.as_bytes() as &[i8]);
-            diocgattr(f.as_raw_fd(), &mut arg).unwrap();
+            let r = diocgattr(f.as_raw_fd(), &mut arg);
+            cfg_if! {
+                if #[cfg(target_pointer_width = "32")] {
+                    if r == Err(nix::errno::Errno::ENOTTY) {
+                        // This error usually means that we're running in 32-bit emulation mode.
+                        // DIOCGATTR does not work in 32-bit emulation, so skip this test.
+                        return
+                    }
+                }
+            }
+            r.unwrap();
             arg.value.i
         };
         assert!(verified != 0);
@@ -272,10 +330,7 @@ mod create {
     fn vnode_with_size() {
         let tf = tempfile::NamedTempFile::new().unwrap();
         tf.as_file().set_len(1 << 21).unwrap();
-        let md = Builder::vnode(tf.path())
-            .size(1 << 20)
-            .create()
-            .unwrap();
+        let md = Builder::vnode(tf.path()).size(1 << 20).create().unwrap();
 
         let data = list_unit(md.unit());
         assert_eq!(data.size, "1024K");

@@ -1,0 +1,72 @@
+setup: &SETUP
+  env:
+    HOME: /tmp # cargo needs it
+  setup_script:
+    - fetch https://sh.rustup.rs -o rustup.sh
+    - sh rustup.sh -y --profile=minimal
+    - $HOME/.cargo/bin/rustup toolchain install $VERSION
+
+task:
+  env:
+    HOME: /tmp  # cargo cache needs it
+    TARGET: x86_64-unknown-freebsd
+    VERSION: 1.70.0
+  matrix:
+    - name: FreeBSD 15 amd64 nightly
+      env:
+        VERSION: nightly
+      freebsd_instance:
+        image_family: freebsd-15-0-snap
+    - name: FreeBSD 14 amd64 stable
+      freebsd_instance:
+        image: freebsd-14-0-release-amd64-ufs
+    - name: FreeBSD 13 amd64 stable
+      freebsd_instance:
+        image: freebsd-13-3-release-amd64
+    - name: FreeBSD 13 i686 stable
+      # Test i686 FreeBSD in 32-bit emulation on a 64-bit host.
+      env:
+        TARGET: i686-unknown-freebsd
+      freebsd_instance:
+        image: freebsd-13-3-release-amd64
+  << : *SETUP
+  extra_setup_script:
+    - . $HOME/.cargo/env
+    - if [ "$TARGET" = "i686-unknown-freebsd" ]; then rustup target add --toolchain $VERSION i686-unknown-freebsd; fi
+  cargo_cache:
+    folder: $HOME/.cargo/registry
+    fingerprint_script: cat Cargo.lock || echo ""
+  test_script:
+    - . $HOME/.cargo/env
+    - cargo +$VERSION test --target $TARGET
+  doc_script:
+    - . $HOME/.cargo/env
+    - cargo +$VERSION doc --target $TARGET --no-deps
+  before_cache_script: rm -rf $HOME/.cargo/registry/index 
+
+# Stuff that doesn't need to be repeated for each target, env, and toolchain
+lint_task:
+  name: lint
+  env:
+    HOME: /tmp  # cargo cache needs it
+    VERSION: nightly
+  freebsd_instance:
+    image: freebsd-13-3-release-amd64
+  << : *SETUP
+  extra_setup_script:
+    - . $HOME/.cargo/env
+    - rustup component add --toolchain $VERSION clippy
+    - rustup component add --toolchain $VERSION rustfmt
+    - pkg install -y ca_root_nss cargo-audit
+  cargo_cache:
+    folder: $HOME/.cargo/registry
+  clippy_script:
+    - . $HOME/.cargo/env
+    - cargo +$VERSION clippy --all-targets -- -D warnings
+  fmt_script:
+    - . $HOME/.cargo/env
+    - cargo +$VERSION fmt --all -- --check --color=never
+  audit_script:
+    - . $HOME/.cargo/env
+    - cargo audit
+  before_cache_script: rm -rf $CARGO_HOME/registry/index
