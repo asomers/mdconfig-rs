@@ -227,10 +227,6 @@ mod create {
         let f = fs::File::open(md.path()).unwrap();
         unsafe { diocgsectorsize(f.as_raw_fd(), &mut sectorsize).unwrap() };
         assert_eq!(sectorsize, 2048);
-        // Even though we have already closed the md device, for some reason
-        // MDDETACH will sometimes still fail with EBUSY unless we use the force
-        // flag.
-        md.destroy(true);
     }
 
     // The kernel requires both of sectors_per_track and heads to be set.  If only one is set, it
@@ -252,10 +248,6 @@ mod create {
         drop(f);
         assert_eq!(sectors, 42);
         assert_eq!(heads, 69);
-        // Even though we have already closed the md device, for some reason
-        // MDDETACH will sometimes still fail with EBUSY unless we use the force
-        // flag.
-        md.destroy(true);
     }
 
     #[test]
@@ -306,10 +298,6 @@ mod create {
         };
         assert!(verified != 0);
         drop(f);
-        // Even though we have already closed the md device, for some reason
-        // MDDETACH will sometimes still fail with EBUSY unless we use the force
-        // flag.
-        md.destroy(true);
     }
 
     #[test]
@@ -383,5 +371,39 @@ mod resize {
         md.resize(1 << 21, false).unwrap();
         let data = list_unit(md.unit());
         assert_eq!(data.size, "2048K");
+    }
+}
+
+mod try_destroy {
+    use std::{
+        thread::sleep,
+        time::{Duration, Instant},
+    };
+
+    use super::*;
+
+    #[test]
+    fn ebusy() {
+        let md = Builder::swap(1 << 21).create().unwrap();
+        let _f = fs::File::open(md.path()).unwrap();
+        let (_md, e) = md.try_destroy().unwrap_err();
+        assert_eq!(libc::EBUSY, e.raw_os_error().unwrap());
+    }
+
+    #[test]
+    fn ok() {
+        let mut md = Builder::swap(1 << 21).create().unwrap();
+        let timeout = Duration::from_secs(5);
+        let start = Instant::now();
+        loop {
+            md = match md.try_destroy() {
+                Ok(()) => return,
+                Err((md, _)) => md,
+            };
+            if start.elapsed() > timeout {
+                panic!("Could not destroy within {:?}", timeout);
+            }
+            sleep(Duration::from_millis(50));
+        }
     }
 }
