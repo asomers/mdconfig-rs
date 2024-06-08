@@ -97,7 +97,6 @@ mod create {
     use super::*;
 
     #[test]
-    #[ignore = "https://github.com/asomers/mdconfig/issues/1"]
     fn async_() {
         require_fbsd15!();
 
@@ -110,7 +109,6 @@ mod create {
     }
 
     #[test]
-    #[ignore = "https://github.com/asomers/mdconfig/issues/1"]
     fn cache() {
         require_fbsd15!();
 
@@ -123,7 +121,6 @@ mod create {
     }
 
     #[test]
-    #[ignore = "https://github.com/asomers/mdconfig/issues/1"]
     fn compress() {
         require_fbsd15!();
 
@@ -163,7 +160,6 @@ mod create {
     }
 
     #[test]
-    #[ignore = "https://github.com/asomers/mdconfig/issues/1"]
     fn mustdealloc() {
         require_fbsd15!();
 
@@ -197,7 +193,6 @@ mod create {
     }
 
     #[test]
-    #[ignore = "https://github.com/asomers/mdconfig/issues/1"]
     fn readonly() {
         require_fbsd15!();
 
@@ -210,7 +205,6 @@ mod create {
     }
 
     #[test]
-    #[ignore = "https://github.com/asomers/mdconfig/issues/1"]
     fn reserve() {
         require_fbsd15!();
 
