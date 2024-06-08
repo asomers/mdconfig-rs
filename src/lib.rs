@@ -324,6 +324,9 @@ impl Builder {
 /// Note that this represents the device itself, not an open device.  To open it, first create it
 /// and then open it like any other file.
 ///
+/// During Drop, the device will be forcefully detached, regardless of whether any other process is
+/// using it.  To conditionally detach the device only if it is idle, use [`try_destroy`].
+///
 /// # Example
 /// ```no_run
 /// let md = mdconfig::Builder::null(1 << 20).create().unwrap();
@@ -339,13 +342,7 @@ pub struct Md {
 }
 
 impl Md {
-    /// Destroy the md(4) device.  With `force`, destroy it even if it is still in use.
-    pub fn destroy(mut self, force: bool) {
-        self.detach(force);
-        std::mem::forget(self)
-    }
-
-    fn detach(&mut self, force: bool) {
+    fn detach(&mut self, force: bool) -> io::Result<()> {
         let md_options = if force { ffi::MD_FORCE } else { 0 };
         let mut mdio = ffi::md_ioctl {
             md_version: ffi::MDIOVERSION,
@@ -361,19 +358,9 @@ impl Md {
             md_label: ptr::null_mut(),
             md_pad: [0; ffi::MDNPAD as usize],
         };
-        let panicking = std::thread::panicking();
-        let mddev = match fs::File::open("/dev/mdctl") {
-            Ok(mddev) => mddev,
-            Err(_) if panicking => {
-                // Don't double panic
-                return;
-            }
-            e => e.expect("Cannot open /dev/mdctl during drop"),
-        };
-        let r = unsafe { ioctl::mdiocdetach(mddev.as_raw_fd(), &mut mdio) };
-        if !panicking {
-            r.expect("Error during MDIOCDETACH");
-        }
+        let mddev = fs::File::open("/dev/mdctl")?;
+        unsafe { ioctl::mdiocdetach(mddev.as_raw_fd(), &mut mdio) }?;
+        Ok(())
     }
 
     /// Report the name to the device, like "md0".
@@ -415,6 +402,21 @@ impl Md {
         Ok(())
     }
 
+    /// Attempt to destroy the underlying device within the operating system.
+    ///
+    /// If unsuccessful, the device will not be changed.  If successful, the actual device will be
+    /// deallocated.  A common reason for failure is `EBUSY`, which indicates that some other
+    /// process has the device open.
+    pub fn try_destroy(mut self) -> std::result::Result<(), (Self, io::Error)> {
+        match self.detach(false) {
+            Ok(()) => {
+                std::mem::forget(self);
+                Ok(())
+            }
+            Err(e) => Err((self, e)),
+        }
+    }
+
     /// Report the device's unit number. e.g. the "0" in "md0".
     ///
     /// # Example
@@ -432,6 +434,9 @@ impl Md {
 
 impl Drop for Md {
     fn drop(&mut self) {
-        self.detach(false)
+        let r = self.detach(true);
+        if !std::thread::panicking() {
+            r.expect("Error during MDIOCDETACH during drop");
+        }
     }
 }
