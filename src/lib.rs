@@ -43,6 +43,16 @@ mod ioctl {
     ioctl_readwrite!(mdiocresize, 'm', 4, ffi::md_ioctl);
 }
 
+macro_rules! set_bool {
+    ( $field:expr, $val:expr, $bit:expr) => {
+        if $val {
+            $field |= $bit;
+        } else {
+            $field &= !$bit;
+        }
+    };
+}
+
 /// Used to construct a new [`Md`] device.
 ///
 /// Some constructors have required arguments.  Other options can be provided with builder methods.
@@ -163,11 +173,7 @@ impl Builder {
     /// deadlocking the entire kernel.
     #[doc(alias = "async")]
     pub fn async_(mut self, async_: bool) -> Self {
-        if async_ {
-            self.mdio.md_options |= ffi::MD_ASYNC;
-        } else {
-            self.mdio.md_options &= !ffi::MD_ASYNC;
-        }
+        set_bool!(self.mdio.md_options, async_, ffi::MD_ASYNC);
         self
     }
 
@@ -176,21 +182,13 @@ impl Builder {
     /// The default is to not cache, because the backing file will usually reside on a file system
     /// that it itself cached.
     pub fn cache(mut self, cache: bool) -> Self {
-        if cache {
-            self.mdio.md_options |= ffi::MD_CACHE;
-        } else {
-            self.mdio.md_options &= !ffi::MD_CACHE;
-        }
+        set_bool!(self.mdio.md_options, cache, ffi::MD_CACHE);
         self
     }
 
     /// Enable/disable compression features to reduce memory usage.
     pub fn compress(mut self, compress: bool) -> Self {
-        if compress {
-            self.mdio.md_options |= ffi::MD_COMPRESS;
-        } else {
-            self.mdio.md_options &= !ffi::MD_COMPRESS;
-        }
+        set_bool!(self.mdio.md_options, compress, ffi::MD_COMPRESS);
         self
     }
 
@@ -220,31 +218,19 @@ impl Builder {
     /// punching, then `BIO_DELETE` requests will be handled by zero-filling.
     // Supported on FreeBSD 14+
     pub fn mustdealloc(mut self, mustdealloc: bool) -> Self {
-        if mustdealloc {
-            self.mdio.md_options |= ffi::MD_MUSTDEALLOC;
-        } else {
-            self.mdio.md_options &= !ffi::MD_MUSTDEALLOC;
-        }
+        set_bool!(self.mdio.md_options, mustdealloc, ffi::MD_MUSTDEALLOC);
         self
     }
 
     /// Allocate and reserve all needed storage from the start, rather than as needed.
     pub fn reserve(mut self, reserve: bool) -> Self {
-        if reserve {
-            self.mdio.md_options |= ffi::MD_RESERVE;
-        } else {
-            self.mdio.md_options &= !ffi::MD_RESERVE;
-        }
+        set_bool!(self.mdio.md_options, reserve, ffi::MD_RESERVE);
         self
     }
 
     /// Enable readonly mode.
     pub fn readonly(mut self, readonly: bool) -> Self {
-        if readonly {
-            self.mdio.md_options |= ffi::MD_READONLY;
-        } else {
-            self.mdio.md_options &= !ffi::MD_READONLY;
-        }
+        set_bool!(self.mdio.md_options, readonly, ffi::MD_READONLY);
         self
     }
 
@@ -282,11 +268,7 @@ impl Builder {
     /// For vnode backed devices: enable/disable requesting verification of the file used for
     /// backing store.
     pub fn verify(mut self, verify: bool) -> Self {
-        if verify {
-            self.mdio.md_options |= ffi::MD_VERIFY;
-        } else {
-            self.mdio.md_options &= !ffi::MD_VERIFY;
-        }
+        set_bool!(self.mdio.md_options, verify, ffi::MD_VERIFY);
         self
     }
 
