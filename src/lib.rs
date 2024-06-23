@@ -307,7 +307,7 @@ impl Builder {
 /// and then open it like any other file.
 ///
 /// During Drop, the device will be forcefully detached, regardless of whether any other process is
-/// using it.  To conditionally detach the device only if it is idle, use [`try_destroy`].
+/// using it.  To conditionally detach the device only if it is idle, use [`Md::try_destroy`].
 ///
 /// # Example
 /// ```no_run
