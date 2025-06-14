@@ -76,7 +76,7 @@ struct MdData {
 fn list_unit(unit: u32) -> MdData {
     let output = Command::new("mdconfig")
         .arg("-lvu")
-        .arg(format!("{}", unit))
+        .arg(format!("{unit}"))
         .output()
         .unwrap();
     let line = OsStr::from_bytes(&output.stdout)
@@ -395,7 +395,7 @@ mod try_destroy {
                 Err((md, _)) => md,
             };
             if start.elapsed() > timeout {
-                panic!("Could not destroy within {:?}", timeout);
+                panic!("Could not destroy within {timeout:?}");
             }
             sleep(Duration::from_millis(50));
         }
