@@ -16,7 +16,7 @@ task:
       env:
         VERSION: nightly
       freebsd_instance:
-        image: freebsd-15-0-beta5-amd64-ufs
+        image: freebsd-15-0-rc2-amd64-ufs
     - name: FreeBSD 14 amd64 stable
       freebsd_instance:
         image: freebsd-14-3-release-amd64-ufs
