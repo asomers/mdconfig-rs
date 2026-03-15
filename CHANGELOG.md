@@ -1,3 +1,10 @@
+## [Unreleased] - ReleaseDate
+
+### Changed
+
+- Widened the range of accepted versions of the nix crate.
+  ([#11](https://github.com/mdconfig/divbuf/pull/11))
+
 ## [0.2.0] - 2024-06-08
 
 ### Changed
