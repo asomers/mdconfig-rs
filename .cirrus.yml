@@ -10,7 +10,7 @@ task:
   env:
     HOME: /tmp  # cargo cache needs it
     TARGET: x86_64-unknown-freebsd
-    VERSION: 1.70.0
+    VERSION: 1.85.0
   matrix:
     - name: FreeBSD 15 amd64 nightly
       env:
@@ -28,7 +28,7 @@ task:
       env:
         TARGET: i686-unknown-freebsd
       freebsd_instance:
-        image: freebsd-13-3-release-amd64
+        image: freebsd-14-3-release-amd64-ufs
   << : *SETUP
   extra_setup_script:
     - . $HOME/.cargo/env
@@ -51,7 +51,7 @@ lint_task:
     HOME: /tmp  # cargo cache needs it
     VERSION: nightly
   freebsd_instance:
-    image: freebsd-13-3-release-amd64
+    image: freebsd-14-3-release-amd64-ufs
   << : *SETUP
   extra_setup_script:
     - . $HOME/.cargo/env

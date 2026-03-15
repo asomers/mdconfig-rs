@@ -2,7 +2,8 @@
 
 ### Changed
 
-- Widened the range of accepted versions of the nix crate.
+- Widened the range of accepted versions of the nix crate.  Also, raised MSRV
+  to 1.85.0.
   ([#11](https://github.com/mdconfig/divbuf/pull/11))
 
 ## [0.2.0] - 2024-06-08
