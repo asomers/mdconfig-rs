@@ -7,7 +7,7 @@ for temporary storage, and they're very useful for working with disk images as
 files.  This crate provides bindings to `md` that are equivalent to what the
 [mdconfig(8)] utility provides, but Rustier.
 
-![Build Status](https://api.cirrus-ci.com/github/asomers/mdconfig.svg)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/asomers/mdconfig/ci.yml?branch=master&style=flat-square)](https://github.com/asomers/mdconfig/actions/workflows/ci.yml?query=branch%3Amaster)
 [![Crates.io](https://img.shields.io/crates/v/mdconfig.svg)](https://crates.io/crates/mdconfig)
 
 [Documentation](https://docs.rs/crate/mdconfig)
