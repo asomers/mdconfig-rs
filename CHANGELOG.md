@@ -1,3 +1,10 @@
+## [Unreleased] - ReleaseDate
+
+### Changed
+
+- Widened the range of accepted versions of the nix crate.
+  ([#16](https://github.com/asomers/mdconfig-rs/pull/16))
+
 ## [0.2.1] - 2026-03-16
 
 ### Changed
