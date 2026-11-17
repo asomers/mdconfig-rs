@@ -4,7 +4,7 @@
 
 - Widened the range of accepted versions of the nix crate.  Also, raised MSRV
   to 1.85.0.
-  ([#11](https://github.com/mdconfig/divbuf/pull/11))
+  ([#11](https://github.com/asomers/mdconfig-rs/pull/11))
 
 ## [0.2.0] - 2024-06-08
 
@@ -21,4 +21,4 @@
   be forcefully detached.  The only way to attempt a non-forceful detach is
   with `Md::try_destroy`.  This eliminates panics during drop as a result of
   `EBUSY`.
-  ([#6](https://github.com/mdconfig/divbuf/pull/3))
+  ([#4](https://github.com/asomers/mdconfig-rs/pull/4))
